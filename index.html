@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Kindle PW5 Dashboard</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    html, body {
+      width: 100%;
+      height: 100vh;
+      background-color: #ffffff;
+      color: #000000;
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      overflow: hidden;
+    }
+    /* Hiệu ứng đảo màu nhanh giúp khử lưu ảnh (ghosting) trên màn E-Ink */
+    body.eink-flash {
+      filter: invert(100%);
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 100vh;
+      padding: 14px 16px;
+    }
+    /* 1. HEADER: NGÀY GIỜ */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 3px solid #000;
+      padding-bottom: 10px;
+    }
+    .clock {
+      font-size: 46px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      line-height: 1;
+    }
+    .date-box {
+      text-align: right;
+    }
+    .day-name {
+      font-size: 20px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .full-date {
+      font-size: 16px;
+      font-weight: 600;
+      margin-top: 2px;
+    }
+
+    /* 2. THỜI TIẾT HÔM NAY & 3 NGÀY TỚI */
+    .weather-section {
+      border-bottom: 2px solid #000;
+      padding: 10px 0;
+    }
+    .section-title {
+      font-size: 14px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      background: #000;
+      color: #fff;
+      padding: 4px 8px;
+      margin-bottom: 8px;
+      display: inline-block;
+    }
+    .weather-grid {
+      display: flex;
+      justify-content: space-between;
+      align-items: stretch;
+      gap: 10px;
+    }
+    .weather-today {
+      flex: 1.3;
+      border: 2px solid #000;
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .wt-temp {
+      font-size: 32px;
+      font-weight: 800;
+      line-height: 1.1;
+    }
+    .wt-desc {
+      font-size: 15px;
+      font-weight: 700;
+      margin-top: 4px;
+    }
+    .wt-sub {
+      font-size: 13px;
+      margin-top: 2px;
+    }
+    .weather-forecast {
+      flex: 2;
+      display: flex;
+      gap: 8px;
+    }
+    .forecast-day {
+      flex: 1;
+      border: 1px solid #000;
+      padding: 6px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .fd-date {
+      font-size: 13px;
+      font-weight: 800;
+      border-bottom: 1px solid #000;
+      padding-bottom: 3px;
+    }
+    .fd-desc {
+      font-size: 12px;
+      font-weight: 600;
+      margin: 4px 0;
+    }
+    .fd-temp {
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    /* 3. LỊCH GOOGLE (HÔM NAY & NGÀY MAI) */
+    .grid-2col {
+      display: flex;
+      gap: 12px;
+      flex: 1;
+      min-height: 0;
+      border-bottom: 2px solid #000;
+      padding: 10px 0;
+    }
+    .col-box {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .col-box:first-child {
+      border-right: 1px dashed #000;
+      padding-right: 10px;
+    }
+    .item-list {
+      list-style: none;
+      overflow-y: auto;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+    .item-list li {
+      padding: 5px 0;
+      border-bottom: 1px dotted #000;
+    }
+    .item-list li:last-child {
+      border-bottom: none;
+    }
+    .ev-time {
+      font-weight: 800;
+      display: inline-block;
+      margin-right: 6px;
+      background: #eee;
+      padding: 1px 4px;
+      border: 1px solid #000;
+      font-size: 12px;
+    }
+    .task-bullet {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border: 2px solid #000;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+
+    /* 4. FOOTER: LẦN CẬP NHẬT GẦN NHẤT & NÚT LÀM MỚI */
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 8px;
+    }
+    .last-updated {
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .refresh-btn {
+      background: #000;
+      color: #fff;
+      border: 2px solid #000;
+      padding: 8px 16px;
+      font-size: 14px;
+      font-weight: 800;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .refresh-btn:active {
+      background: #fff;
+      color: #000;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- HEADER -->
+    <div class="header">
+      <div class="clock" id="clock">--:--</div>
+      <div class="date-box">
+        <div class="day-name" id="dayName">---</div>
+        <div class="full-date" id="fullDate">--/--/----</div>
+      </div>
+    </div>
+
+    <!-- THỜI TIẾT -->
+    <div class="weather-section">
+      <div class="section-title">Thời tiết hiện tại &amp; 3 ngày tới</div>
+      <div class="weather-grid">
+        <div class="weather-today" id="weatherToday">
+          <div class="wt-temp">--°C</div>
+          <div class="wt-desc">Đang tải...</div>
+          <div class="wt-sub">Cao/Thấp: --°/--°</div>
+        </div>
+        <div class="weather-forecast" id="weatherForecast">
+          <div class="forecast-day">...</div>
+          <div class="forecast-day">...</div>
+          <div class="forecast-day">...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LỊCH GOOGLE -->
+    <div class="grid-2col">
+      <div class="col-box">
+        <div><span class="section-title">Lịch hôm nay</span></div>
+        <ul class="item-list" id="calToday">
+          <li>Đang tải lịch...</li>
+        </ul>
+      </div>
+      <div class="col-box">
+        <div><span class="section-title">Lịch ngày mai</span></div>
+        <ul class="item-list" id="calTomorrow">
+          <li>Đang tải lịch...</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- GOOGLE TASKS & GHI CHÚ -->
+    <div class="grid-2col">
+      <div class="col-box">
+        <div><span class="section-title">Cần làm (Tasks)</span></div>
+        <ul class="item-list" id="taskList">
+          <li>Đang tải công việc...</li>
+        </ul>
+      </div>
+      <div class="col-box">
+        <div><span class="section-title">Ghi chú</span></div>
+        <ul class="item-list" id="noteList">
+          <li>Đang tải ghi chú...</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer">
+      <div class="last-updated" id="lastUpdated">Cập nhật gần nhất: --:--:--</div>
+      <button class="refresh-btn" id="refreshBtn" onclick="manualRefresh()">↻ Làm mới ngay</button>
+    </div>
+  </div>
+
+  <script>
+    // 1. DÁN LINK GOOGLE APPS SCRIPT WEB APP CỦA BẠN VÀO ĐÂY:
+    var https://script.google.com/macros/s/AKfycbwS7mVjDfPA3BgxGMNjT8VzeS2PYidbtq9Zvs7KoESeTJj4Rb2nJAdwbcR_pxEyL3Er/exec = "DÁN_LINK_WEB_APP_CỦA_BẠN_VÀO_ĐÂY";
+
+    // 2. TỌA ĐỘ THỜI TIẾT (Mặc định: Hà Nội)
+    var LAT = 21.0285;
+    var LON = 105.8542;
+
+    var DAYS_VN = ["Chủ Nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy"];
+
+    function pad(n) {
+      return n < 10 ? "0" + n : n;
+    }
+
+    function decodeWMO(code) {
+      var map = {
+        0: "Trời quang", 1: "Ít mây", 2: "Mây rải rác", 3: "Nhiều mây",
+        45: "Sương mù", 48: "Sương mù dày",
+        51: "Mưa phùn nhẹ", 53: "Mưa phùn", 55: "Mưa phùn dày",
+        61: "Mưa nhỏ", 63: "Mưa vừa", 65: "Mưa to",
+        80: "Mưa rào nhẹ", 81: "Mưa rào", 82: "Mưa rào lớn",
+        95: "Giông bão", 96: "Giông kèm mưa đá"
+      };
+      return map[code] || "Có mây";
+    }
+
+    function updateClock() {
+      var now = new Date();
+      document.getElementById("clock").innerText = pad(now.getHours()) + ":" + pad(now.getMinutes());
+      document.getElementById("dayName").innerText = DAYS_VN[now.getDay()];
+      document.getElementById("fullDate").innerText =
+        pad(now.getDate()) + "/" + pad(now.getMonth() + 1) + "/" + now.getFullYear();
+    }
+
+    function fetchWeather() {
+      var url = "https://api.open-meteo.com/v1/forecast?latitude=" + LAT + "&longitude=" + LON +
+        "&current=temperature_2m,relative_humidity_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=Asia%2FBangkok&forecast_days=4";
+
+      fetch(url)
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          var cur = data.current;
+          var daily = data.daily;
+
+          document.getElementById("weatherToday").innerHTML =
+            '<div class="wt-temp">' + Math.round(cur.temperature_2m) + '°C</div>' +
+            '<div class="wt-desc">' + decodeWMO(cur.weather_code) + '</div>' +
+            '<div class="wt-sub">Cao: ' + Math.round(daily.temperature_2m_max[0]) + '° | Thấp: ' +
+            Math.round(daily.temperature_2m_min[0]) + '° | Ẩm: ' + cur.relative_humidity_2m + '%</div>';
+
+          var fcHtml = "";
+          for (var i = 1; i <= 3; i++) {
+            var dParts = daily.time[i].split("-");
+            var dObj = new Date(dParts[0], dParts[1] - 1, dParts[2]);
+            var dayLabel = DAYS_VN[dObj.getDay()].replace("Thứ ", "T") + " (" + dParts[2] + "/" + dParts[1] + ")";
+            fcHtml +=
+              '<div class="forecast-day">' +
+                '<div class="fd-date">' + dayLabel + '</div>' +
+                '<div class="fd-desc">' + decodeWMO(daily.weather_code[i]) + '</div>' +
+                '<div class="fd-temp">' + Math.round(daily.temperature_2m_min[i]) + '° - ' + Math.round(daily.temperature_2m_max[i]) + '°C</div>' +
+              '</div>';
+          }
+          document.getElementById("weatherForecast").innerHTML = fcHtml;
+        })
+        .catch(function() {
+          document.getElementById("weatherToday").innerHTML = '<div class="wt-desc">Lỗi tải thời tiết</div>';
+        });
+    }
+
+    function fetchGoogleData() {
+      if (!GAS_WEB_APP_URL || GAS_WEB_APP_URL.indexOf("http") !== 0) {
+        document.getElementById("calToday").innerHTML = "<li>Chưa gắn link GAS_WEB_APP_URL</li>";
+        return Promise.resolve();
+      }
+      return fetch(GAS_WEB_APP_URL + "?t=" + new Date().getTime())
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          // Lịch hôm nay
+          var todayArr = data.calendar && data.calendar.today ? data.calendar.today : [];
+          document.getElementById("calToday").innerHTML = todayArr.length
+            ? todayArr.map(function(e) {
+                return '<li><span class="ev-time">' + e.time + '</span>' + e.title + '</li>';
+              }).join("")
+            : "<li>Không có sự kiện hôm nay</li>";
+
+          // Lịch ngày mai
+          var tomArr = data.calendar && data.calendar.tomorrow ? data.calendar.tomorrow : [];
+          document.getElementById("calTomorrow").innerHTML = tomArr.length
+            ? tomArr.map(function(e) {
+                return '<li><span class="ev-time">' + e.time + '</span>' + e.title + '</li>';
+              }).join("")
+            : "<li>Không có sự kiện ngày mai</li>";
+
+          // Google Tasks
+          var tasksArr = data.tasks || [];
+          document.getElementById("taskList").innerHTML = tasksArr.length
+            ? tasksArr.map(function(t) {
+                return '<li><span class="task-bullet"></span>' + t + '</li>';
+              }).join("")
+            : "<li>Đã hoàn thành hết công việc!</li>";
+
+          // Ghi chú
+          var notesArr = data.notes || [];
+          document.getElementById("noteList").innerHTML = notesArr.length
+            ? notesArr.map(function(n) {
+                return '<li>• ' + n + '</li>';
+              }).join("")
+            : "<li>Tạo danh sách tên \"Ghi chú\" trong Google Tasks để hiện ở đây.</li>";
+        })
+        .catch(function() {
+          document.getElementById("calToday").innerHTML = "<li>Lỗi kết nối Google Script</li>";
+        });
+    }
+
+    function flashEinkScreen() {
+      document.body.classList.add("eink-flash");
+      setTimeout(function() {
+        document.body.classList.remove("eink-flash");
+      }, 180);
+    }
+
+    function refreshAll() {
+      var btn = document.getElementById("refreshBtn");
+      btn.innerText = "Đang tải...";
+      updateClock();
+      fetchWeather();
+      fetchGoogleData().finally(function() {
+        var now = new Date();
+        var timeStr = pad(now.getHours()) + ":" + pad(now.getMinutes()) + ":" + pad(now.getSeconds()) +
+                      " (" + pad(now.getDate()) + "/" + pad(now.getMonth() + 1) + ")";
+        document.getElementById("lastUpdated").innerText = "Cập nhật gần nhất: " + timeStr + " • Tự động: 30p/lần";
+        btn.innerText = "↻ Làm mới ngay";
+        flashEinkScreen();
+      });
+    }
+
+    function manualRefresh() {
+      refreshAll();
+    }
+
+    // Khởi chạy lần đầu
+    updateClock();
+    refreshAll();
+
+    // Cập nhật đồng hồ mỗi 60 giây
+    setInterval(updateClock, 60 * 1000);
+
+    // Tự động làm mới toàn bộ dữ liệu mỗi 30 phút (1.800.000 ms)
+    setInterval(refreshAll, 30 * 60 * 1000);
+  </script>
+</body>
+</html>
